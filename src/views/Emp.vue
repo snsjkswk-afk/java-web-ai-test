@@ -70,6 +70,9 @@
             <el-button type="primary" :icon="Edit" link @click="handleEdit(row)">
               编辑
             </el-button>
+            <el-button type="danger" :icon="Delete" link @click="handleDelete(row)">
+              删除
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -251,7 +254,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Edit, Delete, Search, Refresh } from '@element-plus/icons-vue'
 import request from '../utils/request'
 
@@ -266,7 +269,6 @@ const isEdit = ref(false)
 const submitLoading = ref(false)
 const formRef = ref(null)
 const dateRange = ref([])
-
 const queryParams = reactive({
   page: 1,
   pageSize: 10,
@@ -381,6 +383,23 @@ const handleEdit = async (row) => {
     dialogVisible.value = true
   } catch (error) {
     console.error('加载员工详情失败:', error)
+  }
+}
+
+const handleDelete = async (row) => {
+  try {
+    await ElMessageBox.confirm(`确定要删除员工 "${row.name}" 吗?`, '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    await request.delete(`/emps/${row.id}`)
+    ElMessage.success('删除成功')
+    loadEmpList()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除员工失败:', error)
+    }
   }
 }
 

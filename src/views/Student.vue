@@ -81,13 +81,22 @@
         </el-table-column>
         <el-table-column prop="violationCount" label="违纪次数" align="center" width="90" />
         <el-table-column prop="violationScore" label="违纪扣分" align="center" width="90" />
-        <el-table-column label="操作" align="center" width="200" fixed="right">
+        <el-table-column label="操作" align="center" width="350" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" :icon="Edit" link @click="handleEdit(row)">
               编辑
             </el-button>
             <el-button type="warning" :icon="Warning" link @click="handleViolation(row)">
               违纪
+            </el-button>
+            <el-button type="success" :icon="CircleCheck" link @click="handleReduceViolation(row)">
+              减少违纪
+            </el-button>
+            <el-button type="info" :icon="View" link @click="handleViewViolation(row)">
+              查看违纪
+            </el-button>
+            <el-button type="info" :icon="RefreshLeft" link @click="handleRevokeViolation(row)">
+              撤销违纪
             </el-button>
             <el-button type="danger" :icon="Delete" link @click="handleDelete(row)">
               删除
@@ -222,7 +231,7 @@
     <el-dialog v-model="violationVisible" title="违纪处理" width="450px">
       <el-form :model="violationForm" label-width="100px">
         <el-form-item label="违纪类型">
-          <el-select v-model="violationForm.violation" placeholder="请选择违纪类型" style="width: 100%">
+          <el-select v-model="violationForm.violation" placeholder="请选择违纪类型" style="width: 100%" @change="handleViolationChange">
             <el-option label="迟到" :value="1" />
             <el-option label="早退" :value="2" />
             <el-option label="旷课" :value="3" />
@@ -232,10 +241,50 @@
         <el-form-item label="扣分">
           <el-input-number v-model="violationForm.score" :min="1" :max="10" style="width: 100%" />
         </el-form-item>
+        <el-form-item label="详情: ">
+          <el-input v-model="violationForm.description" type="textarea" :rows="3" placeholder="请输入违纪描述" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="violationVisible = false">取消</el-button>
         <el-button type="primary" @click="submitViolation">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 减少违纪对话框 -->
+    <el-dialog v-model="reduceViolationVisible" title="减少违纪" width="450px">
+      <el-form :model="reduceViolationForm" label-width="100px">
+        <el-form-item label="违纪类型">
+          <el-select v-model="reduceViolationForm.violation" placeholder="请选择违纪类型" style="width: 100%" @change="handleReduceViolationChange">
+            <el-option label="迟到" :value="1" />
+            <el-option label="早退" :value="2" />
+            <el-option label="旷课" :value="3" />
+            <el-option label="打架" :value="4" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="减少分数">
+          <el-input-number v-model="reduceViolationForm.score" :min="1" :max="10" style="width: 100%" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="reduceViolationVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitReduceViolation">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 查看违纪对话框 -->
+    <el-dialog v-model="viewViolationVisible" title="违纪记录" width="600px">
+      <el-table :data="violationRecords" border stripe v-loading="violationLoading">
+        <el-table-column label="违纪类型" align="center" width="100">
+          <template #default="{ row }">
+            {{ violationTypeMap[row.violation] || '未知' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="score" label="扣分" align="center" width="80" />
+        <el-table-column prop="createTime" label="违纪时间" align="center" />
+      </el-table>
+      <template #footer>
+        <el-button @click="viewViolationVisible = false">关闭</el-button>
       </template>
     </el-dialog>
   </div>
@@ -243,11 +292,15 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Edit, Delete, Search, Refresh, Warning } from '@element-plus/icons-vue'
+import { Plus, Edit, Delete, Search, Refresh, Warning, CircleCheck, RefreshLeft, View } from '@element-plus/icons-vue'
 import request from '../utils/request'
 
+const router = useRouter()
+
 const degreeMap = { 1: '初中', 2: '高中', 3: '大专', 4: '本科', 5: '硕士', 6: '博士' }
+const violationTypeMap = { 1: '迟到', 2: '早退', 3: '旷课', 4: '打架' }
 
 const loading = ref(false)
 const studentList = ref([])
@@ -259,6 +312,10 @@ const submitLoading = ref(false)
 const formRef = ref(null)
 const selectedIds = ref([])
 const violationVisible = ref(false)
+const reduceViolationVisible = ref(false)
+const viewViolationVisible = ref(false)
+const violationLoading = ref(false)
+const violationRecords = ref([])
 
 const queryParams = reactive({
   page: 1,
@@ -283,6 +340,13 @@ const studentForm = reactive({
 })
 
 const violationForm = reactive({
+  id: null,
+  violation: null,
+  score: 1,
+  description: ''
+})
+
+const reduceViolationForm = reactive({
   id: null,
   violation: null,
   score: 1
@@ -397,7 +461,18 @@ const handleViolation = (row) => {
   violationForm.id = row.id
   violationForm.violation = null
   violationForm.score = 1
+  violationForm.description = ''
   violationVisible.value = true
+}
+
+// 违纪类型改变时自动设置扣分
+const handleViolationChange = (value) => {
+  violationForm.score = value
+}
+
+// 减少违纪类型改变时自动设置减少分数
+const handleReduceViolationChange = (value) => {
+  reduceViolationForm.score = value
 }
 
 // 提交违纪
@@ -407,13 +482,67 @@ const submitViolation = async () => {
     return
   }
   try {
-    await request.put(`/students/${violationForm.violation}/${violationForm.id}/${violationForm.score}`)
+    await request.put(`/students/disciplinary/${violationForm.id}`, {
+      violationType: violationTypeMap[violationForm.violation],
+      violationScore: violationForm.score,
+      description: violationForm.description || violationTypeMap[violationForm.violation]
+    })
     ElMessage.success('违纪处理成功')
     violationVisible.value = false
     loadStudentList()
   } catch (error) {
     // 错误已在拦截器中处理
   }
+}
+
+// 减少违纪
+const handleReduceViolation = (row) => {
+  reduceViolationForm.id = row.id
+  reduceViolationForm.violation = null
+  reduceViolationForm.score = 1
+  reduceViolationVisible.value = true
+}
+
+// 提交减少违纪
+const submitReduceViolation = async () => {
+  if (!reduceViolationForm.violation) {
+    ElMessage.warning('请选择违纪类型')
+    return
+  }
+  try {
+    await request.put(`/students/reduce/${reduceViolationForm.id}/${reduceViolationForm.violation}/${reduceViolationForm.score}`)
+    ElMessage.success('减少违纪成功')
+    reduceViolationVisible.value = false
+    loadStudentList()
+  } catch (error) {
+    // 错误已在拦截器中处理
+  }
+}
+
+// 撤销违纪
+const handleRevokeViolation = async (row) => {
+  try {
+    await ElMessageBox.confirm(`确定要撤销学生「${row.name}」的所有违纪记录吗？`, '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    await request.put(`/students/revoke/${row.id}`)
+    ElMessage.success('撤销违纪成功')
+    loadStudentList()
+  } catch (error) {
+    if (error !== 'cancel') {
+      // 错误已在拦截器中处理
+    }
+  }
+}
+
+// 查看违纪记录
+const handleViewViolation = (row) => {
+  router.push({
+    path: '/violation',
+    query: { studentId: row.id, studentName: row.name }
+  })
 }
 
 // 提交表单

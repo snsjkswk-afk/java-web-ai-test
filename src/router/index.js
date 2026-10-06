@@ -44,6 +44,12 @@ const routes = [
         meta: { title: '学生管理' }
       },
       {
+        path: 'violation',
+        name: 'Violation',
+        component: () => import('../views/Violation.vue'),
+        meta: { title: '违纪记录' }
+      },
+      {
         path: 'log',
         name: 'Log',
         component: () => import('../views/Log.vue'),
