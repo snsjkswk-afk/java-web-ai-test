@@ -8,6 +8,7 @@
       <el-table :data="logList" border stripe v-loading="loading" style="width: 100%">
         <el-table-column prop="id" label="ID" width="80" align="center" />
         <el-table-column prop="operateTime" label="操作时间" align="center" width="200" />
+        <el-table-column prop="operator" label="操作人" align="center" width="150" />
         <el-table-column prop="info" label="操作详情" align="center" show-overflow-tooltip />
       </el-table>
 
