@@ -9,7 +9,24 @@
             placeholder="请输入班级名称"
             clearable
             @clear="handleSearch"
+            style="width: 150px"
           />
+        </el-form-item>
+        <el-form-item label="班主任">
+          <el-input
+            v-model="queryParams.masterName"
+            placeholder="请输入班主任姓名"
+            clearable
+            @clear="handleSearch"
+            style="width: 180px"
+          />
+        </el-form-item>
+        <el-form-item label="学科">
+          <el-select v-model="queryParams.subject" placeholder="请选择学科" clearable style="width: 120px">
+            <el-option label="Java" :value="1" />
+            <el-option label="前端" :value="2" />
+            <el-option label="Python" :value="3" />
+          </el-select>
         </el-form-item>
         <el-form-item label="开课时间">
           <el-date-picker
@@ -187,6 +204,8 @@ const queryParams = reactive({
   page: 1,
   pageSize: 10,
   name: '',
+  masterName: '',
+  subject: null,
   begin: '',
   end: ''
 })
@@ -261,6 +280,8 @@ const handleSearch = () => {
 // 重置
 const handleReset = () => {
   queryParams.name = ''
+  queryParams.masterName = ''
+  queryParams.subject = null
   queryParams.begin = ''
   queryParams.end = ''
   dateRange.value = []

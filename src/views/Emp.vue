@@ -12,9 +12,18 @@
           />
         </el-form-item>
         <el-form-item label="性别">
-          <el-select v-model="queryParams.gender" placeholder="请选择" clearable>
+          <el-select v-model="queryParams.gender" placeholder="请选择" clearable style="width: 120px">
             <el-option label="男" :value="1" />
             <el-option label="女" :value="2" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="职位">
+          <el-select v-model="queryParams.job" placeholder="请选择职位" clearable style="width: 150px">
+            <el-option label="班主任" :value="1" />
+            <el-option label="讲师" :value="2" />
+            <el-option label="学工主管" :value="3" />
+            <el-option label="教研主管" :value="4" />
+            <el-option label="咨询师" :value="5" />
           </el-select>
         </el-form-item>
         <el-form-item label="入职时间">
@@ -274,6 +283,7 @@ const queryParams = reactive({
   pageSize: 10,
   name: '',
   gender: null,
+  job: null,
   begin: '',
   end: ''
 })
@@ -353,6 +363,7 @@ const handleSearch = () => {
 const handleReset = () => {
   queryParams.name = ''
   queryParams.gender = null
+  queryParams.job = null
   queryParams.begin = ''
   queryParams.end = ''
   dateRange.value = []

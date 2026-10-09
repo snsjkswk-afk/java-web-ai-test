@@ -12,7 +12,7 @@
           />
         </el-form-item>
         <el-form-item label="学历">
-          <el-select v-model="queryParams.degree" placeholder="请选择" clearable>
+          <el-select v-model="queryParams.degree" placeholder="请选择" clearable style="width: 100px">
             <el-option label="初中" value="1" />
             <el-option label="高中" value="2" />
             <el-option label="大专" value="3" />
@@ -22,7 +22,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="班级">
-          <el-select v-model="queryParams.clazzId" placeholder="请选择班级" clearable>
+          <el-select v-model="queryParams.clazzId" placeholder="请选择班级" clearable style="width: 200px">
             <el-option
               v-for="clazz in clazzOptions"
               :key="clazz.id"

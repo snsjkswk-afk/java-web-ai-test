@@ -63,7 +63,8 @@
         <div class="header-right">
           <el-dropdown @command="handleCommand">
             <span class="user-info">
-              <el-avatar :size="30" :icon="UserFilled" />
+              <el-avatar v-if="userAvatar" :size="30" :src="userAvatar" />
+              <el-avatar v-else :size="30" :icon="UserFilled" />
               <span class="username">{{ userName }}</span>
               <el-icon><ArrowDown /></el-icon>
             </span>
@@ -100,6 +101,16 @@ const currentTitle = computed(() => route.meta.title || '')
 const userName = computed(() => {
   const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
   return userInfo.name || userInfo.username || '用户'
+})
+
+const userAvatar = computed(() => {
+  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+  const avatar = userInfo.image || userInfo.avatar || ''
+  // 如果是相对路径，添加 API 前缀
+  if (avatar && avatar.startsWith('/')) {
+    return '/api' + avatar
+  }
+  return avatar || null
 })
 
 const handleCommand = (command) => {
